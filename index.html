@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pomodoro Tracker</title>
+<style>
+/* ===== GLOBAL ===== */
+body {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(to bottom, #b3e5fc, #e1f5fe);
+  margin: 0;
+  color: #333;
+  text-align: center;
+}
+nav {
+  background: #0288d1;
+  color: white;
+  padding: 12px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+button { background:#0288d1; color:white; border:none; border-radius:8px; padding:8px 15px; margin:5px; cursor:pointer; }
+button:hover { background:#0277bd; }
+input, select { padding:8px; border-radius:6px; border:1px solid #ccc; }
+
+/* HERO */
+.hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+  text-align: center;
+}
+.hero h1 { font-size: 2.5rem; margin-bottom: 15px; }
+.hero p { font-size: 1.2rem; margin-bottom: 25px; }
+.start-btn {
+  background: #0288d1;
+  color: white;
+  text-decoration: none;
+  padding: 12px 25px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  transition: 0.3s;
+}
+.start-btn:hover { background: #0277bd; }
+
+/* GRID & CONTAINERS */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+.container {
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 5px 12px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+/* TIMER */
+.water-timer {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 20px auto;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid #0288d1;
+  background: #b3e5fc;
+}
+#water-fill { position:absolute; bottom:0; left:0; width:100%; height:0%; background: linear-gradient(to top,#0288d1,#81d4fa); transition: height 1s linear; }
+#timer { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:2rem; font-weight:bold; color:#01579b; }
+.rain { position:absolute; width:100%; height:100%; pointer-events:none; overflow:hidden; }
+.rain::before, .rain::after { content:''; position:absolute; width:2px; height:10px; background:rgba(255,255,255,0.7); top:-10px; animation: rain 0.5s linear infinite; }
+@keyframes rain { 0%{transform:translateY(0);opacity:1;} 100%{transform:translateY(200px);opacity:0;} }
+
+/* TASKS */
+.task { display:flex; justify-content:space-between; padding:10px; margin:5px 0; border-radius:8px; color:white; }
+.task.completed { text-decoration:line-through; opacity:0.6; }
+.task.high { background-color:#e63946; }
+.task.medium { background-color:#f4a261; }
+.task.low { background-color:#2a9d8f; }
+
+/* SMILE POPUP */
+#smilePopup { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); background:#b3e5fc; color:#01579b; padding:30px; border-radius:50%; font-size:2rem; font-weight:bold; transition: transform 0.4s ease; z-index:999; }
+#smilePopup.show { transform:translate(-50%, -50%) scale(1); }
+
+footer { text-align:center; padding:12px; background:#0288d1; color:white; margin-top:20px; border-radius:0 0 15px 15px; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<nav>
+  <div>Pomodoro Tracker</div>
+  <div><button id="historyBtn">📜 History</button></div>
+</nav>
+
+<!-- HERO SECTION -->
+<section class="hero" id="homeHero">
+  <h1>Track Yourself. Stay Focused.</h1>
+  <p>Boost your productivity with smart Pomodoro cycles and task tracking.</p>
+  <button class="start-btn" onclick="showFeatures()">Start Now</button>
+</section>
+
+<!-- FEATURES SECTION -->
+<div id="featuresSection" style="display:none;">
+  <div class="grid-container">
+    <!-- TIMER -->
+    <div class="container timer-container">
+      <h2>Pomodoro Timer</h2>
+      <div class="water-timer">
+        <div class="rain"></div>
+        <div id="water-fill"></div>
+        <div id="timer">25:00</div>
+      </div>
+      <input type="number" id="customTime" placeholder="Enter minutes" min="1">
+      <button onclick="startCustomTimer()">Start</button>
+      <button onclick="pauseTimer()">Pause</button>
+      <button onclick="resetTimer()">Reset</button>
+    </div>
+
+    <!-- TASK PANEL -->
+    <div class="container">
+      <h2>Task Logger</h2>
+      <input type="text" id="taskInput" placeholder="Enter Task">
+      <select id="priority">
+        <option value="high">High</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
+      </select>
+      <button onclick="addTask()">Add Task</button>
+      <div id="taskList"></div>
+      <button style="background:#e63946;" onclick="resetWeekly()">Reset Weekly</button>
+    </div>
+
+    <!-- HISTORY PANEL -->
+    <div class="container" id="historyPanel" style="display:none;">
+      <h2>Session History</h2>
+      <div id="historyList"></div>
+    </div>
+
+    <!-- GRAPH PANEL -->
+    <div class="container">
+      <h2>📊 Task Completion Graph</h2>
+      <canvas id="progressChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div id="smilePopup">😊 Great Job!</div>
+
+<footer>© 2025 Pomodoro Tracker | Stay Consistent 🚀</footer>
+
+<script>
+// ===== SHOW FEATURES =====
+function showFeatures(){
+  document.getElementById("homeHero").style.display="none";
+  document.getElementById("featuresSection").style.display="block";
+}
+
+// ===== TIMER =====
+let timerInterval, totalTime=25*60, remainingTime=totalTime, isRunning=false;
+function startCustomTimer(){
+  if(isRunning) return;
+  const inputMinutes=parseInt(document.getElementById("customTime").value);
+  totalTime=inputMinutes>0?inputMinutes*60:25*60;
+  remainingTime=totalTime;
+  isRunning=true;
+  updateDisplay();
+  timerInterval=setInterval(updateTimer,1000);
+}
+function updateTimer(){
+  if(remainingTime>0){ remainingTime--; updateDisplay(); }
+  else{ clearInterval(timerInterval); isRunning=false; document.getElementById("water-fill").style.height="100%"; showSmile(); saveHistory(); }
+}
+function pauseTimer(){ clearInterval(timerInterval); isRunning=false; }
+function resetTimer(){ clearInterval(timerInterval); isRunning=false; remainingTime=totalTime; document.getElementById("timer").innerText="00:00"; document.getElementById("water-fill").style.height="0%"; }
+function updateDisplay(){ const min=Math.floor(remainingTime/60), sec=remainingTime%60; document.getElementById("timer").innerText=${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}; document.getElementById("water-fill").style.height=((totalTime-remainingTime)/totalTime*100)+"%"; }
+
+// ===== TASKS =====
+let tasks=JSON.parse(localStorage.getItem("tasks")||"[]");
+function addTask(){
+  const text=document.getElementById("taskInput").value.trim();
+  const priority=document.getElementById("priority").value;
+  if(!text) return;
+  tasks.push({text, completed:false, priority});
+  saveTasks(); renderTasks();
+}
+function toggleComplete(i){ tasks[i].completed=!tasks[i].completed; saveTasks(); renderTasks(); if(tasks[i].completed) showSmile(); }
+function renderTasks(){
+  const list=document.getElementById("taskList"); list.innerHTML="";
+  tasks.forEach((t,i)=>{
+    const div=document.createElement("div");
+    div.className=task ${t.priority}+(t.completed?" completed":"");
+    div.innerHTML=${t.text} <button onclick="toggleComplete(${i})">✔</button>;
+    list.appendChild(div);
+  });
+  updateGraph();
+}
+function saveTasks(){ localStorage.setItem("tasks",JSON.stringify(tasks)); }
+function resetWeekly(){ tasks=[]; saveTasks(); renderTasks(); document.getElementById("historyList").innerHTML=""; }
+
+// ===== SMILE POPUP =====
+function showSmile(){ const popup=document.getElementById("smilePopup"); popup.classList.add("show"); setTimeout(()=>popup.classList.remove("show"),1500); }
+
+// ===== HISTORY =====
+function saveHistory(){
+  const historyList=document.getElementById("historyList");
+  const div=document.createElement("div");
+  const now=new Date().toLocaleString();
+  div.textContent=Completed a ${Math.floor(totalTime/60)} min session at ${now};
+  historyList.appendChild(div);
+}
+
+// ===== HISTORY TOGGLE =====
+document.getElementById("historyBtn").addEventListener("click",()=>{
+  const panel=document.getElementById("historyPanel");
+  panel.style.display=panel.style.display==="none"?"block":"none";
+});
+
+// ===== GRAPH =====
+let chart;
+function updateGraph(){
+  const history={};
+  tasks.forEach(t=>{ if(t.completed){ const date=new Date().toLocaleDateString(); history[date]=(history[date]||0)+1; }});
+  const labels=Object.keys(history);
+  const values=Object.values(history);
+  const ctx=document.getElementById("progressChart").getContext("2d");
+  if(chart) chart.destroy();
+  chart=new Chart(ctx,{
+    type:'bar',
+    data:{ labels, datasets:[{ label:'Tasks Completed', data:values, backgroundColor:'#0288d1' }] },
+    options:{ scales:{ y:{ beginAtZero:true } } }
+  });
+}
+
+// INIT
+renderTasks();
+</script>
+
+</body>
+</html>
